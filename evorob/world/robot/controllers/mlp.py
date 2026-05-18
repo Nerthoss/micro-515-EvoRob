@@ -99,19 +99,27 @@ class NeuralNetworkController(Controller):
 
     def _mirror(self, half_action: np.ndarray) -> np.ndarray:
         """
-        Given a 4-element action for [FL_hip, FL_knee, BL_hip, BL_knee],
-        produce the full 8-element action:
-            [FL_hip, FL_knee, FR_hip, FR_knee, BL_hip, BL_knee, BR_hip, BR_knee]
-        where FR_hip = -FL_hip, BR_hip = -BL_hip (negated yaw),
-        and   FR_knee = FL_knee, BR_knee = BL_knee (same flexion).
-        """
-        mirrored = half_action.copy()
-        mirrored[self._HIP_INDICES] *= -1.0   # flip hip direction for opposite side
+        Diagonal pairing: FL↔BR and FR↔BL (cross-body symmetry).
+        half_action = [FR_hip, FR_knee, FL_hip, FL_knee]
 
-        # Interleave: [left0, right0, left1, right1, ...]
+        Mirroring rule:
+        BL_hip = -FR_hip,  BL_knee = FR_knee
+        BR_hip = -FL_hip,  BR_knee = FL_knee
+
+        Output order: [FL_hip, FL_knee, FR_hip, FR_knee, BL_hip, BL_knee, BR_hip, BR_knee]
+        """
+        FR_hip,  FR_knee  = half_action[0], half_action[1]
+        FL_hip,  FL_knee  = half_action[2], half_action[3]
+
         full = np.empty(self.n_output)
-        full[0::2] = half_action   # left side:  FL_hip, FL_knee, BL_hip, BL_knee
-        full[1::2] = mirrored      # right side: FR_hip, FR_knee, BR_hip, BR_knee
+        full[0] =  FL_hip    # FL_hip
+        full[1] =  FL_knee   # FL_knee
+        full[2] =  FR_hip    # FR_hip
+        full[3] =  FR_knee   # FR_knee
+        full[4] = -FR_hip    # BL_hip  = mirror of FR (negated)
+        full[5] =  FR_knee   # BL_knee = mirror of FR (same)
+        full[6] = -FL_hip    # BR_hip  = mirror of FL (negated)
+        full[7] =  FL_knee   # BR_knee = mirror of FL (same)
         return full
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
