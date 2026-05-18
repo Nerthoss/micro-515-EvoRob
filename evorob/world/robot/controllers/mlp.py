@@ -63,27 +63,27 @@ class NeuralNetworkController(Controller):
     def reset_controller(self, batch_size=1) -> None:
         pass
 
-    class SymmetricNeuralNetworkController(Controller):
-        """
-        MLP with bilateral symmetry enforcement.
+class SymmetricNeuralNetworkController(Controller):
+    """
+    MLP with bilateral symmetry enforcement.
 
-        The network only produces actions for 4 joints (one side of each leg pair).
-        The other 4 are obtained by mirroring: hip action is negated (flips yaw
-        direction), knee action is copied as-is.
+    The network only produces actions for 4 joints (one side of each leg pair).
+    The other 4 are obtained by mirroring: hip action is negated (flips yaw
+    direction), knee action is copied as-is.
 
-        Default joint ordering assumed (matches FinalWorld defaults):
-            0: FL hip,  1: FL knee
-            2: FR hip,  3: FR knee
-            4: BL hip,  5: BL knee
-            6: BR hip,  7: BR knee
+    Default joint ordering assumed (matches FinalWorld defaults):
+        0: FL hip,  1: FL knee
+        2: FR hip,  3: FR knee
+        4: BL hip,  5: BL knee
+        6: BR hip,  7: BR knee
 
-        Mirror pairs: (FL↔FR) and (BL↔BR).
-        """
+    Mirror pairs: (FL↔FR) and (BL↔BR).
+    """
 
-        # Which output indices are hips (negated when mirroring) vs knees (copied).
-        # Half-output vector is [FL_hip, FL_knee, BL_hip, BL_knee] (indices 0-3).
-        _HIP_INDICES = [0, 2]    # positions in the half-action that are hips
-        _KNEE_INDICES = [1, 3]   # positions in the half-action that are knees
+    # Which output indices are hips (negated when mirroring) vs knees (copied).
+    # Half-output vector is [FL_hip, FL_knee, BL_hip, BL_knee] (indices 0-3).
+    _HIP_INDICES = [0, 2]    # positions in the half-action that are hips
+    _KNEE_INDICES = [1, 3]   # positions in the half-action that are knees
 
     def __init__(self, input_size: int, output_size: int = 8, hidden_size: int = 16):
         assert output_size == 8, "SymmetricController expects exactly 8 output joints"
@@ -100,27 +100,26 @@ class NeuralNetworkController(Controller):
     def _mirror(self, half_action: np.ndarray) -> np.ndarray:
         """
         Diagonal pairing: FL↔BR and FR↔BL (cross-body symmetry).
-        half_action = [FR_hip, FR_knee, FL_hip, FL_knee]
-
-        Mirroring rule:
-        BL_hip = -FR_hip,  BL_knee = FR_knee
-        BR_hip = -FL_hip,  BR_knee = FL_knee
+        half_action shape: (4,) or (batch, 4)
 
         Output order: [FL_hip, FL_knee, FR_hip, FR_knee, BL_hip, BL_knee, BR_hip, BR_knee]
         """
-        FR_hip,  FR_knee  = half_action[0], half_action[1]
-        FL_hip,  FL_knee  = half_action[2], half_action[3]
+        # index the last axis so both (4,) and (batch, 4) work
+        FR_hip  = half_action[..., 0]
+        FR_knee = half_action[..., 1]
+        FL_hip  = half_action[..., 2]
+        FL_knee = half_action[..., 3]
 
-        full = np.empty(self.n_output)
-        full[0] =  FL_hip    # FL_hip
-        full[1] =  FL_knee   # FL_knee
-        full[2] =  FR_hip    # FR_hip
-        full[3] =  FR_knee   # FR_knee
-        full[4] = -FR_hip    # BL_hip  = mirror of FR (negated)
-        full[5] =  FR_knee   # BL_knee = mirror of FR (same)
-        full[6] = -FL_hip    # BR_hip  = mirror of FL (negated)
-        full[7] =  FL_knee   # BR_knee = mirror of FL (same)
-        return full
+        return np.stack([
+            FL_hip,    # 0: FL_hip
+            FL_knee,   # 1: FL_knee
+            FR_hip,    # 2: FR_hip
+            FR_knee,   # 3: FR_knee
+            -FR_hip,    # 4: BL_hip  (mirror of FR)
+            FR_knee,   # 5: BL_knee
+            -FL_hip,    # 6: BR_hip  (mirror of FL)
+            FL_knee,   # 7: BR_knee
+        ], axis=-1)     # axis=-1 keeps (8,) or (batch, 8) consistent
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         assert state.shape[-1] == self.n_input

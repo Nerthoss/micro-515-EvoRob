@@ -622,7 +622,7 @@ def run_multi_task_evolution(
 if __name__ == "__main__":
     # Quick smoke-test — 2 generations, tiny population
     run_multi_task_evolution(
-        num_generations=2,
+        num_generations=20,
         population_size=32,
         n_parents=32,
         n_repeats=2,
@@ -630,3 +630,9 @@ if __name__ == "__main__":
         ckpt_interval=1,
         results_dir=join(ROOT_DIR, "results", "final_test"),
     )
+
+    # evaluate_checkpoint(
+    #     checkpoint_dir=join(ROOT_DIR, "results", "final_test", "gen_10"),
+    #     output_dir=join(ROOT_DIR, "results", "final_test", "evaluation"),
+    #     n_episodes=4,
+    # )
