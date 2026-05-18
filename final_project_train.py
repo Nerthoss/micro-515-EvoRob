@@ -31,7 +31,8 @@ import evorob.world                         # registers EvalEnv-v0
 from evorob.algorithms.nsga_sol import NSGAII
 from evorob.utils.filesys import get_last_checkpoint_dir, get_project_root
 from evorob.world.base import World
-from evorob.world.robot.controllers.mlp_sol import NeuralNetworkController
+from evorob.world.robot.controllers.mlp import NeuralNetworkController
+from evorob.world.robot.controllers.mlp import SymmetricNeuralNetworkController
 from evorob.world.robot.morphology.ant_custom_robot import AntRobot
 
 ROOT_DIR = get_project_root()
@@ -58,9 +59,9 @@ class FinalWorld(World):
         # from evorob.world.robot.controllers.mlp import NeuralNetworkController  # your impl
         # from evorob.world.robot.controllers.so2 import SO2Controller
         # self.controller = SO2Controller(input_size=27, output_size=8, hidden_size=8)
-        self.controller = NeuralNetworkController(
-            input_size=27, output_size=8, hidden_size=8
-        )
+        
+        #self.controller = NeuralNetworkController(input_size=27, output_size=8, hidden_size=8)             #! Swap between controller for symmetry enforcement
+        #self.controller = SymmetricNeuralNetworkController(input_size=27, output_size=8, hidden_size=8)
 
         self.n_weights     = self.controller.n_params
         self.n_body_params = 8          # 4 legs × (upper + lower segment length)
