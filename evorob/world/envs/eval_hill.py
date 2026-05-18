@@ -28,7 +28,7 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
         robot_path: str,
         frame_skip: int = 5,
         default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
-        ctrl_cost_weight: float = 0.5,
+        ctrl_cost_weight: float = 0.3,
         cfrc_cost_weight: float = 5e-4,
         reset_noise_scale: float = 0.1,
         **kwargs,
@@ -71,14 +71,26 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
 
         xyz_velocity = (xyz_after - xyz_before) / self.dt
         x_velocity = float(xyz_velocity[0])
+        z_velocity = float(xyz_velocity[2])
         x_position = float(xyz_after[0])
 
         healthy_reward = 1.0
         ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
         cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
+        # Penalize sliding backward
+        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+
+        # Reward upward movement
+        climbing_bonus = max(z_velocity, 0.0)
+
         terminated = self._is_terminated(xyz_velocity)
-        reward = healthy_reward + x_position - ctrl_cost - cfrc_cost
+        reward = (healthy_reward
+                + x_position
+                + 0.3 * climbing_bonus
+                - 2.0 * backward_penalty
+                - ctrl_cost          
+                - cfrc_cost)
 
         info = {
             "healthy_reward": -10.0 if terminated else healthy_reward,
@@ -86,8 +98,10 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
             "ctrl_cost": ctrl_cost,
             "cfrc_cost": cfrc_cost,
             "x_velocity": x_velocity,
+            "z_velocity": z_velocity,
+            "climbing_bonus": 0.3 * climbing_bonus,
+            "backward_penalty": 2.0 * backward_penalty,
         }
-
         if self.render_mode == "human":
             self.render()
         return self._get_obs(), reward, terminated, False, info

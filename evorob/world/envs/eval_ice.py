@@ -31,7 +31,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         robot_path: str,
         frame_skip: int = 5,
         default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
-        ctrl_cost_weight: float = 0.5,
+        ctrl_cost_weight: float = 0.8,
         cfrc_cost_weight: float = 5e-4,
         reset_noise_scale: float = 0.1,
         **kwargs,
@@ -48,6 +48,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         self._ctrl_cost_weight = ctrl_cost_weight
         self._cfrc_cost_weight = cfrc_cost_weight
         self._reset_noise_scale = reset_noise_scale
+        self._prev_x_velocity = 0.0
 
         MujocoEnv.__init__(
             self, xml_file_path, frame_skip,
@@ -67,24 +68,39 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         )
 
     def step(self, action):
+        y_penalty_weight = 0.5
+        x_penalty_weight = 0.7
+        velocity_variance_weight = 0.2
+
         x_before = self.data.qpos[0]
+        y_before = self.data.qpos[1]
         self.do_simulation(action, self.frame_skip)
         x_after = self.data.qpos[0]
+        y_after = self.data.qpos[1]
 
-        x_velocity = (x_after - x_before) / self.dt
+        x_velocity = (x_after - x_before) / self.dt * x_penalty_weight
+        y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
+
+        # Penalize for large changes in x velocity (encourages smoother, more stable movement on ice)
+        velocity_variance = ((x_velocity - self._prev_x_velocity) ** 2) * velocity_variance_weight
+        self._prev_x_velocity = x_velocity  # update for next step
+
         healthy_reward = 1.0
         ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
         cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
         terminated = self._is_terminated()
-        reward = healthy_reward + x_velocity - ctrl_cost - cfrc_cost
+        reward = healthy_reward + x_velocity - y_velocity - velocity_variance - ctrl_cost - cfrc_cost
 
         info = {
             "healthy_reward": -10.0 if terminated else healthy_reward,
             "x_position": float(x_after),
+            "y_position": float(y_after),
             "ctrl_cost": ctrl_cost,
             "cfrc_cost": cfrc_cost,
             "x_velocity": x_velocity,
+            "y_velocity": y_velocity,
+            "velocity_variance": velocity_variance,
         }
 
         if self.render_mode == "human":
@@ -107,6 +123,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         qpos = self.init_qpos + self.np_random.uniform(-noise, noise, size=self.model.nq)
         qvel = self.init_qvel + noise ** 2 * self.np_random.standard_normal(self.model.nv)
         self.set_state(qpos, qvel)
+        self._prev_x_velocity = 0.0
         return self._get_obs()
 
     def _get_reset_info(self):
