@@ -81,16 +81,13 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
         # Penalize sliding backward
         backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
 
-        # Reward upward movement
-        climbing_bonus = max(z_velocity, 0.0)
-
         terminated = self._is_terminated(xyz_velocity)
         reward = (healthy_reward
                 + x_position
-                + 0.3 * climbing_bonus
                 - 2.0 * backward_penalty
                 - ctrl_cost          
                 - cfrc_cost)
+        reward = np.clip(reward, -500, None)
 
         info = {
             "healthy_reward": -10.0 if terminated else healthy_reward,
@@ -99,7 +96,6 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
             "cfrc_cost": cfrc_cost,
             "x_velocity": x_velocity,
             "z_velocity": z_velocity,
-            "climbing_bonus": 0.3 * climbing_bonus,
             "backward_penalty": 2.0 * backward_penalty,
         }
         if self.render_mode == "human":
