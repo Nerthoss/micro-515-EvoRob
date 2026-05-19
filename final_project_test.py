@@ -58,17 +58,12 @@ from evorob.world.eval_world import EvalWorld
 # Set this to the controller you used during training.
 # Leave None to use the default (mlp_sol, input=27, output=8, hidden=8).
 #
-# from evorob.world.robot.controllers.mlp import NeuralNetworkController
-# MY_CONTROLLER = NeuralNetworkController(input_size=27, output_size=8, hidden_size=8)
-#
-# from evorob.world.robot.controllers.so2 import SO2Controller
-# MY_CONTROLLER = SO2Controller(input_size=27, output_size=8, hidden_size=8)
-
-MY_CONTROLLER = None
+from evorob.world.robot.controllers.mlp import SymmetricNeuralNetworkController
+MY_CONTROLLER = SymmetricNeuralNetworkController(input_size=27, output_size=8, hidden_size=8)
 
 # --- Paths ---
 # Option A: directory that contains x_best.npy (recommended)
-CHECKPOINT_DIR = "results/final_project"
+CHECKPOINT_DIR = "results/smoke_test1/0"  # e.g. "results/final_project"
 
 # Option B: provide the robot XML and genotype as separate files
 ROBOT_XML_PATH = None   # e.g. "/abs/path/to/Robot.xml"

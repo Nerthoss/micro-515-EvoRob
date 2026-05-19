@@ -21,6 +21,8 @@ import xml.etree.ElementTree as xml
 from os.path import join
 from tempfile import TemporaryDirectory
 
+import time
+
 import gymnasium as gym
 import numpy as np
 import scipy.ndimage
@@ -65,7 +67,7 @@ class FinalWorld(World):
 
         self.n_weights     = self.controller.n_params
         #self.n_body_params = 8          #! Swap for symmetry 4 legs × (upper + lower segment length)
-        self.n_body_params = 4          #! enforce left-right symmetry → only 4 unique leg parameters
+        self.n_body_params = 4           #! enforce left-right symmetry → only 4 unique leg parameters
         self.n_params      = self.n_weights + self.n_body_params
 
         # Temporary directory holds AntRobot.xml + one combined world XML per terrain
@@ -533,7 +535,39 @@ def evaluate_checkpoint(
 # ---------------------------------------------------------------------------
 # Main training loop
 # ---------------------------------------------------------------------------
+def sanity_check():
+    world = FinalWorld()
+    print(f"Genotype: {world.n_params} params"
+          f"  (controller={world.n_weights}, body={world.n_body_params})")
 
+    # Test 1: all zeros — full genotype
+    test_geno1 = np.zeros(world.n_params)
+    pheno1 = world.geno2pheno_sym(test_geno1)
+    print(f"All-zero leg lengths: {pheno1[0]}")  # print just the points
+
+    # Test 2: all ones — full genotype
+    test_geno2 = np.ones(world.n_params)
+    pheno2 = world.geno2pheno_sym(test_geno2)
+    print(f"All-one leg lengths: {pheno2[0]}")
+
+    # Test 3: verify symmetry is enforced
+    test_geno3 = np.zeros(world.n_params)
+    test_geno3[world.n_weights:] = np.array([0.5, -0.5, 0.3, -0.3])
+    pheno3 = world.geno2pheno_sym(test_geno3)
+    print(f"Symmetry check points:\n{pheno3[0]}")
+
+    points = pheno3[0]
+    print(f"Front-left  knee: {points[1]}")
+    print(f"Front-right knee: {points[4]}")
+    # x should be opposite sign, y and z should be equal
+
+    # Test 4: full rollout
+    test_genotype = np.random.uniform(-1, 1, world.n_params)
+    fitness = world.evaluate_individual(test_genotype)
+    print(f"Fitness on [flat, ice, hill]: {fitness}")
+    assert np.all(np.isfinite(fitness)), "Non-finite fitness detected!"
+
+    
 def run_multi_task_evolution(
     num_generations: int = 100,
     population_size: int = 100,
@@ -621,18 +655,23 @@ def run_multi_task_evolution(
 
 if __name__ == "__main__":
     # Quick smoke-test — 2 generations, tiny population
+    start = time.time()
+
     run_multi_task_evolution(
-        num_generations=20,
-        population_size=32,
-        n_parents=32,
-        n_repeats=2,
-        n_steps=100,
-        ckpt_interval=1,
-        results_dir=join(ROOT_DIR, "results", "final_test"),
+        num_generations=5,
+        population_size=100,
+        n_parents=50,
+        n_repeats=4,
+        n_steps=500,
+        ckpt_interval=5,
+        results_dir=join(ROOT_DIR, "results", "smoke_test03"),
     )
 
+    print(f"5 generations took {time.time()-start:.1f}s")
+    print(f"Estimated 200 gen: {(time.time()-start)/5*200/60:.1f} minutes")
+
     # evaluate_checkpoint(
-    #     checkpoint_dir=join(ROOT_DIR, "results", "final_test", "gen_10"),
-    #     output_dir=join(ROOT_DIR, "results", "final_test", "evaluation"),
-    #     n_episodes=4,
+    #     checkpoint_dir="results/final_test/19",
     # )
+
+    # sanity_check()
