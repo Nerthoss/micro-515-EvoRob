@@ -76,12 +76,14 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
 
         x_velocity = (x_after - x_before) / self.dt
         y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
+        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+
         healthy_reward = 1.0
         ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
         cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
         terminated = self._is_terminated()
-        reward = healthy_reward + x_velocity - y_velocity - ctrl_cost - cfrc_cost
+        reward = healthy_reward + x_velocity - y_velocity - ctrl_cost - cfrc_cost - backward_penalty
 
         reward = np.clip(reward, -500, None)
         
@@ -93,6 +95,7 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
             "cfrc_cost": cfrc_cost,
             "x_velocity": x_velocity,
             "y_velocity": y_velocity,
+            "backward_penalty": backward_penalty,
         }
 
         if self.render_mode == "human":

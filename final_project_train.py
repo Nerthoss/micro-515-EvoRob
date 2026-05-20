@@ -179,7 +179,7 @@ class FinalWorld(World):
 
         Returns (points, connectivity_mat) for AntRobot construction.
         """
-        control_params = genotype[:self.n_weights] * 0.1
+        control_params = genotype[:self.n_weights] * 0.05
         body_params = (genotype[self.n_weights:self.n_weights+4] + 1) / 4 + 0.1
 
         front_left_leg, front_left_ankle, back_left_leg, back_left_ankle = body_params
@@ -416,24 +416,52 @@ def evaluate_checkpoint(
         return dict(mean=float(arr.mean()), std=float(arr.std()),
                     best=float(arr.max()), worst=float(arr.min()), values=values)
 
-    def _run(env_id: str, world_file: str) -> list:
+    def _run(env_id: str, world_file: str) -> tuple[list, dict]:
         rng = np.random.default_rng(SEED)
         env = gym.make(env_id, robot_path=world_file, max_episode_steps=MAX_STEPS)
         rewards = []
+        
+        # Diagnostic accumulators
+        diag = {
+            "forward": [], "healthy": [], "ctrl": [], "cfrc": [],
+            "steps": [], "x_velocity": []
+        }
+
         for ep in range(n_episodes):
             world.controller.reset_controller(batch_size=1)
             obs, _ = env.reset(seed=int(rng.integers(0, 2 ** 31)))
             total, done = 0.0, False
+
+            ep_forward = ep_healthy = ep_ctrl = ep_cfrc = 0.0
+            ep_steps = 0
+            ep_velocities = []
+
             while not done:
                 action = world.controller.get_action(obs)
                 if action.ndim > 1:
                     action = action.squeeze(0)
                 obs, _, terminated, truncated, info = env.step(action)
                 total += _neutral(info)
+
+                # Accumulate per-step components
+                ep_forward  += float(info.get("healthy_reward", 1.0))  # x_position proxy
+                ep_healthy  += float(info.get("healthy_reward", 1.0))
+                ep_ctrl     -= float(info.get("ctrl_cost",      0.0))
+                ep_cfrc     -= float(info.get("cfrc_cost",      0.0))
+                ep_velocities.append(float(info.get("x_velocity", 0.0)))
+                ep_steps    += 1
                 done = terminated or truncated
+
             rewards.append(total)
+            diag["forward"].append(ep_forward)
+            diag["healthy"].append(ep_healthy)
+            diag["ctrl"].append(ep_ctrl)
+            diag["cfrc"].append(ep_cfrc)
+            diag["steps"].append(ep_steps)
+            diag["x_velocity"].append(float(np.mean(ep_velocities)))
+
         env.close()
-        return rewards
+        return rewards, diag
 
     def _record(env_id: str, world_file: str, out_path: str) -> None:
         try:
@@ -463,7 +491,9 @@ def evaluate_checkpoint(
 
     for terrain_name, (env_id, world_file) in terrains.items():
         print(f"  Running {terrain_name}  ({n_episodes} episodes)...", flush=True)
-        results[terrain_name] = _stats(_run(env_id, world_file))
+        rewards, diag = _run(env_id, world_file)  # ← unpack tuple
+        results[terrain_name] = _stats(rewards)
+        results[terrain_name]["diag"] = diag      # ← store diagnostics
 
     # Per-episode 3-column table
     t_names = list(results.keys())
@@ -484,6 +514,32 @@ def evaluate_checkpoint(
     print(f"  {'std':>4}   " + "   ".join(
         f"{results[n]['std']:>{col_w}.2f}" for n in t_names
     ))
+    print()
+
+    # --- Reward decomposition diagnostics ---
+    print("\nReward decomposition (mean across episodes):")
+    print(f"  {'Terrain':<8} {'x_vel':>8} {'Steps':>7} {'Healthy':>9} "
+          f"{'Ctrl':>9} {'Cfrc':>9} {'Total':>9}")
+    print("  " + "-" * 65)
+    for terrain_name, r in results.items():
+        d = r["diag"]
+        print(f"  {terrain_name:<8}"
+              f" {np.mean(d['x_velocity']):8.3f}"
+              f" {np.mean(d['steps']):7.1f}"
+              f" {np.mean(d['healthy']):9.2f}"
+              f" {np.mean(d['ctrl']):9.2f}"
+              f" {np.mean(d['cfrc']):9.2f}"
+              f" {r['mean']:9.2f}")
+    print()
+
+    # --- Early termination diagnosis ---
+    print("Early termination analysis:")
+    for terrain_name, r in results.items():
+        d = r["diag"]
+        steps = np.array(d["steps"])
+        early = np.sum(steps < MAX_STEPS)
+        print(f"  {terrain_name:<8}: {early}/{n_episodes} episodes terminated early"
+              f"  (mean survival: {steps.mean():.1f}/{MAX_STEPS} steps)")
     print()
 
     # --- Record one video per terrain ---
@@ -529,6 +585,7 @@ def evaluate_checkpoint(
         print(f"  {terrain_name:<6}: {r['mean']:8.2f} ± {r['std']:7.2f}"
               f"  best={r['best']:.2f}  worst={r['worst']:.2f}")
     print("=" * col)
+
     return results
 
 
@@ -566,7 +623,6 @@ def sanity_check():
     fitness = world.evaluate_individual(test_genotype)
     print(f"Fitness on [flat, ice, hill]: {fitness}")
     assert np.all(np.isfinite(fitness)), "Non-finite fitness detected!"
-
     
 def run_multi_task_evolution(
     num_generations: int = 100,
@@ -655,23 +711,26 @@ def run_multi_task_evolution(
 
 if __name__ == "__main__":
     # Quick smoke-test — 2 generations, tiny population
-    # start = time.time()
+    start = time.time()
 
-    # run_multi_task_evolution(
-    #     num_generations=200,
-    #     population_size=100,
-    #     n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
-    #     n_repeats=4,
-    #     n_steps=500,
-    #     ckpt_interval=2,
-    #     results_dir=join(ROOT_DIR, "results", "test02_200gen"),
-    # )
-
-    # print(f"10 generations took {time.time()-start:.1f}s")
-    # print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
-
-    evaluate_checkpoint(
-        checkpoint_dir="results/test02_200gen",
+    run_multi_task_evolution(
+        num_generations=5,
+        population_size=100,
+        n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
+        n_repeats=8,
+        n_steps=1000,
+        ckpt_interval=2,
+        results_dir=join(ROOT_DIR, "results", "smoke_test07"),
     )
+
+    print(f"10 generations took {time.time()-start:.1f}s")
+    print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
+
+    # x_gen98 = np.load("results/test02_200gen/98/x.npy")[75]
+    # np.save("results/test02_200gen/98/x_best.npy", x_gen98)
+
+    # evaluate_checkpoint(
+    #     checkpoint_dir="results/test02_200gen/98",
+    # )
 
     #sanity_check()

@@ -125,7 +125,7 @@ class SymmetricNeuralNetworkController(Controller):
         assert state.shape[-1] == self.n_input
         hid = np.tanh(state @ self.lin.T)
         half_action = np.tanh(hid @ self.output.T)
-        return np.clip(self._mirror(half_action), -1.0, 1.0)
+        return np.clip(self._mirror(half_action) * 0.5, -1.0, 1.0)
 
     def set_weights(self, weights: np.ndarray):
         assert len(weights) == self.n_con1 + self.n_con2, (

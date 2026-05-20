@@ -81,6 +81,8 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         x_velocity = (x_after - x_before) / self.dt * x_penalty_weight
         y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
 
+        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+
         # Penalize for large changes in x velocity (encourages smoother, more stable movement on ice)
         velocity_variance = ((x_velocity - self._prev_x_velocity) ** 2) * velocity_variance_weight
         self._prev_x_velocity = x_velocity  # update for next step
@@ -90,7 +92,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
         terminated = self._is_terminated()
-        reward = healthy_reward + x_velocity - y_velocity - velocity_variance - ctrl_cost - cfrc_cost
+        reward = healthy_reward + x_velocity - y_velocity - velocity_variance - ctrl_cost - cfrc_cost - backward_penalty
 
         reward = np.clip(reward, -500, None)
         
@@ -103,6 +105,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
             "x_velocity": x_velocity,
             "y_velocity": y_velocity,
             "velocity_variance": velocity_variance,
+            "backward_penalty": backward_penalty,
         }
 
         if self.render_mode == "human":
