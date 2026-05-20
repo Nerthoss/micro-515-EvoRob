@@ -79,7 +79,7 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
         cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
         # Penalize sliding backward
-        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+        backward_penalty = np.clip(abs(x_velocity) if x_velocity < 0 else 0.0, 0, 50)
 
         terminated = self._is_terminated(xyz_velocity)
         reward = (healthy_reward
@@ -87,6 +87,7 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
                 - 2.0 * backward_penalty
                 - ctrl_cost          
                 - cfrc_cost)
+        
         reward = np.clip(reward, -500, None)
 
         info = {

@@ -658,20 +658,20 @@ if __name__ == "__main__":
     # start = time.time()
 
     # run_multi_task_evolution(
-    #     num_generations=10,
+    #     num_generations=200,
     #     population_size=100,
     #     n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
     #     n_repeats=4,
     #     n_steps=500,
-    #     ckpt_interval=2,
-    #     results_dir=join(ROOT_DIR, "results", "smoke_test04"),
+    #     ckpt_interval=10,
+    #     results_dir=join(ROOT_DIR, "results", "test01_200gen"),
     # )
 
     # print(f"10 generations took {time.time()-start:.1f}s")
     # print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
 
     evaluate_checkpoint(
-        checkpoint_dir="results/smoke_test04",
+        checkpoint_dir="results/test01_200gen",
     )
 
-    # sanity_check()
+    #sanity_check()

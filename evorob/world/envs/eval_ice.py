@@ -92,6 +92,8 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         terminated = self._is_terminated()
         reward = healthy_reward + x_velocity - y_velocity - velocity_variance - ctrl_cost - cfrc_cost
 
+        reward = np.clip(reward, -500, None)
+        
         info = {
             "healthy_reward": -10.0 if terminated else healthy_reward,
             "x_position": float(x_after),

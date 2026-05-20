@@ -81,11 +81,11 @@ class SymmetricNeuralNetworkController(Controller):
     """
 
     # Which output indices are hips (negated when mirroring) vs knees (copied).
-    # Half-output vector is [FL_hip, FL_knee, BL_hip, BL_knee] (indices 0-3).
-    _HIP_INDICES = [0, 2]    # positions in the half-action that are hips
-    _KNEE_INDICES = [1, 3]   # positions in the half-action that are knees
+    # Half-output vector is [FL_hip, FL_knee, FR_hip, FR_knee] (indices 0-3)
+    _HIP_INDICES  = [0, 2]   # FL_hip, FR_hip — negated when mirroring
+    _KNEE_INDICES = [1, 3]   # FL_knee, FR_knee — copied when mirroring
 
-    def __init__(self, input_size: int, output_size: int = 8, hidden_size: int = 16):
+    def __init__(self, input_size: int, output_size: int = 8, hidden_size: int = 8):
         assert output_size == 8, "SymmetricController expects exactly 8 output joints"
         self.n_input = input_size
         self.n_output = output_size
@@ -99,27 +99,27 @@ class SymmetricNeuralNetworkController(Controller):
 
     def _mirror(self, half_action: np.ndarray) -> np.ndarray:
         """
-        Diagonal pairing: FL↔BR and FR↔BL (cross-body symmetry).
-        half_action shape: (4,) or (batch, 4)
+        Diagonal trot pairing: FL=BR and FR=BL.
+        half_action: [FL_hip, FL_knee, FR_hip, FR_knee]
 
-        Output order: [FL_hip, FL_knee, FR_hip, FR_knee, BL_hip, BL_knee, BR_hip, BR_knee]
+        Output order: [FL_hip, FL_knee, FR_hip, FR_knee,
+                    BL_hip, BL_knee, BR_hip, BR_knee]
         """
-        # index the last axis so both (4,) and (batch, 4) work
-        FR_hip  = half_action[..., 0]
-        FR_knee = half_action[..., 1]
-        FL_hip  = half_action[..., 2]
-        FL_knee = half_action[..., 3]
+        FL_hip  = half_action[..., 0]
+        FL_knee = half_action[..., 1]
+        FR_hip  = half_action[..., 2]
+        FR_knee = half_action[..., 3]
 
         return np.stack([
             FL_hip,    # 0: FL_hip
             FL_knee,   # 1: FL_knee
             FR_hip,    # 2: FR_hip
             FR_knee,   # 3: FR_knee
-            -FR_hip,    # 4: BL_hip  (mirror of FR)
-            FR_knee,   # 5: BL_knee
-            -FL_hip,    # 6: BR_hip  (mirror of FL)
-            FL_knee,   # 7: BR_knee
-        ], axis=-1)     # axis=-1 keeps (8,) or (batch, 8) consistent
+            -FR_hip,   # 4: BL_hip  (diagonal of FR, negated for yaw direction)
+            FR_knee,   # 5: BL_knee (diagonal of FR, copied)
+            -FL_hip,   # 6: BR_hip  (diagonal of FL, negated for yaw direction)
+            FL_knee,   # 7: BR_knee (diagonal of FL, copied)
+        ], axis=-1)
 
     def get_action(self, state: np.ndarray) -> np.ndarray:
         assert state.shape[-1] == self.n_input
