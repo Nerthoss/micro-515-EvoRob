@@ -63,11 +63,11 @@ MY_CONTROLLER = SymmetricNeuralNetworkController(input_size=27, output_size=8, h
 
 # --- Paths ---
 # Option A: directory that contains x_best.npy (recommended)
-CHECKPOINT_DIR = "results/smoke_test02/0"  # e.g. "results/final_project"
+CHECKPOINT_DIR = None  # e.g. "results/final_project"
 
 # Option B: provide the robot XML and genotype as separate files
-ROBOT_XML_PATH = None   # e.g. "/abs/path/to/Robot.xml"
-GENOTYPE_PATH  = None   # e.g. "/abs/path/to/x_best.npy"
+ROBOT_XML_PATH = "/Users/svenprofichet/Documents/Etude/EPFL/Master/MA4/EvoRob/Exercices/micro-515-EvoRob/results/test02_200gen/98/Robot.xml"   # e.g. "/abs/path/to/Robot.xml"
+GENOTYPE_PATH  = "/Users/svenprofichet/Documents/Etude/EPFL/Master/MA4/EvoRob/Exercices/micro-515-EvoRob/results/test02_200gen/98/x_best.npy"   # e.g. "/abs/path/to/x_best.npy"
 
 # --- Output ---
 OUTPUT_DIR = "evaluation_output"
