@@ -714,13 +714,13 @@ if __name__ == "__main__":
     start = time.time()
 
     run_multi_task_evolution(
-        num_generations=5,
+        num_generations=200,
         population_size=100,
         n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
         n_repeats=8,
         n_steps=1000,
         ckpt_interval=2,
-        results_dir=join(ROOT_DIR, "results", "smoke_test07"),
+        results_dir=join(ROOT_DIR, "results", "test03_200gen"),
     )
 
     print(f"10 generations took {time.time()-start:.1f}s")

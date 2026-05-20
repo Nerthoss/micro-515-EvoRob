@@ -1,0 +1,13 @@
+Genotype : 252 params  (controller=248, body=4)
+
+Running 5 generations  pop=100
+Objectives : [flat, ice, hill]
+Checkpoints: /home/profiche/ER_course/micro-515-EvoRob/results/smoke_test07
+
+Generation 0:	[ 132.87905019 -301.84935494  434.43521393]
+Mean fitness:	-298.05 +- 890.87
+Mean fitness per obj: ['-154.74 +-108.39', '-375.46 +-210.30', '-363.95 +-1514.62']
+
+Training summary saved to: /home/profiche/ER_course/micro-515-EvoRob/results/smoke_test07/training_score.txt
+10 generations took 1203.8s
+Estimated 200 gen: 401.3 minutes
