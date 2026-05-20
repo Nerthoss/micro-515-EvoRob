@@ -30,7 +30,7 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
         robot_path: str,
         frame_skip: int = 5,
         default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
-        ctrl_cost_weight: float = 0.5,
+        ctrl_cost_weight: float = 0.3,
         cfrc_cost_weight: float = 5e-4,
         reset_noise_scale: float = 0.1,
         **kwargs,
@@ -66,42 +66,56 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
         )
 
     def step(self, action):
-        y_penalty_weight = 0.3
-
+        # --- Simulate one step ---
         x_before = self.data.qpos[0]
         y_before = self.data.qpos[1]
         self.do_simulation(action, self.frame_skip)
         x_after = self.data.qpos[0]
-        y_after = self.data.qpos[1]
+        y_after  = self.data.qpos[1]
 
+        # --- Velocity computation ---
         x_velocity = (x_after - x_before) / self.dt
-        y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
-        backward_penalty = max(-x_velocity, 0.0) * 2.0
+        y_velocity  = (y_after - y_before) / self.dt
 
-        healthy_reward = 1.0
-        ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
-        cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
+        # --- Reward components ---
+        healthy_reward   = 0.3
+        forward_reward   =  2.0 * max(x_velocity, 0.0)   # only reward forward motion
+        backward_penalty =  1.0 * max(-x_velocity, 0.0)  # penalize moving backward
+        y_penalty        =  0.3 * abs(y_velocity)         # discourage lateral drift
+        ctrl_cost        = float(np.sum(action ** 2) * self._ctrl_cost_weight)
+        cfrc_cost        = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
-        terminated = self._is_terminated()
-        reward = healthy_reward + x_velocity - y_velocity - ctrl_cost - cfrc_cost - backward_penalty
+        # --- Total reward ---
+        reward = (forward_reward
+                + healthy_reward
+                - backward_penalty
+                - y_penalty
+                - ctrl_cost
+                - cfrc_cost)
 
         reward = np.clip(reward, -500, None)
-        
+
+        # --- Termination ---
+        terminated = self._is_terminated()
+
+        # --- Info dict ---
         info = {
-            "healthy_reward": -10.0 if terminated else healthy_reward,
-            "x_position": float(x_after),
-            "y_position": float(y_after),
-            "ctrl_cost": ctrl_cost,
-            "cfrc_cost": cfrc_cost,
-            "x_velocity": x_velocity,
-            "y_velocity": y_velocity,
-            "backward_penalty": backward_penalty,
+            "healthy_reward":    -10.0 if terminated else 0.0,
+            "x_position":        float(x_after),
+            "y_position":        float(y_after),
+            "x_velocity":        x_velocity,
+            "y_velocity":        y_velocity,
+            "forward_reward":    forward_reward,
+            "backward_penalty":  backward_penalty,
+            "y_penalty":         y_penalty,
+            "ctrl_cost":         ctrl_cost,
+            "cfrc_cost":         cfrc_cost,
         }
 
         if self.render_mode == "human":
             self.render()
         return self._get_obs(), reward, terminated, False, info
-
+    
     def _is_terminated(self) -> bool:
         z = float(self.data.qpos[2])
         return (

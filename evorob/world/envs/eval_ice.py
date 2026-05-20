@@ -68,44 +68,55 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         )
 
     def step(self, action):
-        y_penalty_weight = 0.5
-        x_penalty_weight = 0.7
-        velocity_variance_weight = 0.2
-
+        # --- Simulate one step ---
         x_before = self.data.qpos[0]
         y_before = self.data.qpos[1]
         self.do_simulation(action, self.frame_skip)
         x_after = self.data.qpos[0]
-        y_after = self.data.qpos[1]
+        y_after  = self.data.qpos[1]
 
-        x_velocity = (x_after - x_before) / self.dt * x_penalty_weight
-        y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
+        # --- Velocity computation ---
+        x_velocity = (x_after - x_before) / self.dt
+        y_velocity  = (y_after - y_before) / self.dt
 
-        backward_penalty = max(-x_velocity, 0.0) * 2.0
+        # --- Reward components ---
+        healthy_reward   = 0.3
+        forward_reward    =  2.0 * max(x_velocity, 0.0)    # only reward forward motion
+        backward_penalty  =  1.0 * max(-x_velocity, 0.0)   # penalize moving backward
+        y_penalty         =  0.5 * abs(y_velocity)          # stronger than flat — lateral drift more dangerous on ice
+        velocity_variance =  0.2 * (x_velocity - self._prev_x_velocity) ** 2  # penalize jerky motion
+        ctrl_cost         = float(np.sum(action ** 2) * self._ctrl_cost_weight)
+        cfrc_cost         = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
-        # Penalize for large changes in x velocity (encourages smoother, more stable movement on ice)
-        velocity_variance = ((x_velocity - self._prev_x_velocity) ** 2) * velocity_variance_weight
         self._prev_x_velocity = x_velocity  # update for next step
 
-        healthy_reward = 1.0
-        ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
-        cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
-
-        terminated = self._is_terminated()
-        reward = healthy_reward + x_velocity - y_velocity - velocity_variance - ctrl_cost - cfrc_cost - backward_penalty
+        # --- Total reward ---
+        reward = (forward_reward
+                + healthy_reward
+                - backward_penalty
+                - y_penalty
+                - velocity_variance
+                - ctrl_cost
+                - cfrc_cost)
 
         reward = np.clip(reward, -500, None)
-        
+
+        # --- Termination ---
+        terminated = self._is_terminated()
+
+        # --- Info dict ---
         info = {
-            "healthy_reward": -10.0 if terminated else healthy_reward,
-            "x_position": float(x_after),
-            "y_position": float(y_after),
-            "ctrl_cost": ctrl_cost,
-            "cfrc_cost": cfrc_cost,
-            "x_velocity": x_velocity,
-            "y_velocity": y_velocity,
+            "healthy_reward":    -10.0 if terminated else 0.0,
+            "x_position":        float(x_after),
+            "y_position":        float(y_after),
+            "x_velocity":        x_velocity,
+            "y_velocity":        y_velocity,
+            "forward_reward":    forward_reward,
+            "backward_penalty":  backward_penalty,
+            "y_penalty":         y_penalty,
             "velocity_variance": velocity_variance,
-            "backward_penalty": backward_penalty,
+            "ctrl_cost":         ctrl_cost,
+            "cfrc_cost":         cfrc_cost,
         }
 
         if self.render_mode == "human":

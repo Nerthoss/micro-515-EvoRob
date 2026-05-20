@@ -29,7 +29,7 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
         frame_skip: int = 5,
         default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
         ctrl_cost_weight: float = 0.3,
-        cfrc_cost_weight: float = 5e-4,
+        cfrc_cost_weight: float = 1e-4,
         reset_noise_scale: float = 0.1,
         **kwargs,
     ):
@@ -65,44 +65,51 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
         )
 
     def step(self, action):
+        # --- Simulate one step ---
         xyz_before = self.data.body(1).xpos[:3].copy()
         self.do_simulation(action, self.frame_skip)
         xyz_after = self.data.body(1).xpos[:3].copy()
 
+        # --- Velocity and position computation ---
         xyz_velocity = (xyz_after - xyz_before) / self.dt
-        x_velocity = float(xyz_velocity[0])
-        z_velocity = float(xyz_velocity[2])
-        x_position = float(xyz_after[0])
+        x_velocity   = float(xyz_velocity[0])
+        z_velocity   = float(xyz_velocity[2])
+        x_position   = float(xyz_after[0])
 
-        healthy_reward = 1.0
-        ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
-        cfrc_cost = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
+        # --- Reward components ---
+        healthy_reward   =  1.0
+        forward_reward   =  2.0 * max(x_velocity, 0.0)     # reward forward progress
+        backward_penalty =  3.0 * max(-x_velocity, 0.0)    # strong — x_position makes sliding back very costly
+        ctrl_cost        = float(np.sum(action ** 2) * self._ctrl_cost_weight)
+        cfrc_cost        = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
 
-        # Penalize sliding backward
-        backward_penalty = max(-x_velocity, 0.0) * 5.0
-
+        # --- Total reward ---
         terminated = self._is_terminated(xyz_velocity)
         reward = (healthy_reward
                 + x_position
-                - 2.0 * backward_penalty
-                - ctrl_cost          
+                + forward_reward
+                - backward_penalty
+                - ctrl_cost
                 - cfrc_cost)
-        
+
         reward = np.clip(reward, -500, None)
 
+        # --- Info dict ---
         info = {
-            "healthy_reward": -10.0 if terminated else healthy_reward,
-            "x_position": x_position,
-            "ctrl_cost": ctrl_cost,
-            "cfrc_cost": cfrc_cost,
-            "x_velocity": x_velocity,
-            "z_velocity": z_velocity,
-            "backward_penalty": 2.0 * backward_penalty,
+            "healthy_reward":   -10.0 if terminated else healthy_reward,
+            "x_position":       x_position,
+            "x_velocity":       x_velocity,
+            "z_velocity":       z_velocity,
+            "forward_reward":   forward_reward,
+            "backward_penalty": backward_penalty,
+            "ctrl_cost":        ctrl_cost,
+            "cfrc_cost":        cfrc_cost,
         }
+
         if self.render_mode == "human":
             self.render()
         return self._get_obs(), reward, terminated, False, info
-
+    
     def _is_terminated(self, xyz_velocity: np.ndarray) -> bool:
         qacc = self.data.qacc
         if np.any(np.isnan(qacc) | np.isinf(qacc) | (np.abs(qacc) > 1e6)):
