@@ -81,7 +81,7 @@ class EvalIceEnv(MujocoEnv, utils.EzPickle):
         x_velocity = (x_after - x_before) / self.dt * x_penalty_weight
         y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
 
-        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+        backward_penalty = max(-x_velocity, 0.0) * 2.0
 
         # Penalize for large changes in x velocity (encourages smoother, more stable movement on ice)
         velocity_variance = ((x_velocity - self._prev_x_velocity) ** 2) * velocity_variance_weight

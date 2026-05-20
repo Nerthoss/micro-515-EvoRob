@@ -6,7 +6,7 @@ best_min = -np.inf
 best_gen = None
 best_idx = None
 
-for path in sorted(glob.glob("results/test02_200gen/*/f.npy")):
+for path in sorted(glob.glob("results/smoke_test08/*/f.npy")):
     f = np.load(path)
     min_fitness = f.min(axis=1)  # worst terrain per individual
     idx = min_fitness.argmax()   # individual with best worst-case
@@ -18,11 +18,11 @@ for path in sorted(glob.glob("results/test02_200gen/*/f.npy")):
 print(f"Best generalist at: {best_gen}, individual {best_idx}")
 print(f"Worst-case fitness: {best_min:.2f}")
 
-f_all = np.load("results/test02_200gen/198/f.npy")   # shape (pop, 3)
-x_all = np.load("results/test02_200gen/198/x.npy")   # shape (pop, n_params)
+# f_all = np.load("results/smoke_test07/198/f.npy")   # shape (pop, 3)
+# x_all = np.load("results/smoke_test07/198/x.npy")   # shape (pop, n_params)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection="3d")
-ax.scatter(f_all[:, 0], f_all[:, 1], f_all[:, 2])
-ax.set_xlabel("Flat"); ax.set_ylabel("Ice"); ax.set_zlabel("Hill")
-plt.show()
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection="3d")
+# ax.scatter(f_all[:, 0], f_all[:, 1], f_all[:, 2])
+# ax.set_xlabel("Flat"); ax.set_ylabel("Ice"); ax.set_zlabel("Hill")
+# plt.show()

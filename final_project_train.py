@@ -723,14 +723,14 @@ if __name__ == "__main__":
         results_dir=join(ROOT_DIR, "results", "test03_200gen"),
     )
 
-    print(f"10 generations took {time.time()-start:.1f}s")
+    print(f"5 generations took {time.time()-start:.1f}s")
     print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
 
-    # x_gen98 = np.load("results/test02_200gen/98/x.npy")[75]
-    # np.save("results/test02_200gen/98/x_best.npy", x_gen98)
+    # x_gen4 = np.load("results/smoke_test09/4/x.npy")[14]
+    # np.save("results/smoke_test09/4/x_best.npy", x_gen4)
 
     # evaluate_checkpoint(
-    #     checkpoint_dir="results/test02_200gen/98",
+    #     checkpoint_dir="results/smoke_test09/4",
     # )
 
     #sanity_check()

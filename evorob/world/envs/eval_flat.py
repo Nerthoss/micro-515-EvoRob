@@ -76,7 +76,7 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
 
         x_velocity = (x_after - x_before) / self.dt
         y_velocity = abs((y_after - y_before) / self.dt) * y_penalty_weight
-        backward_penalty = abs(x_velocity) if x_velocity < 0 else 0.0
+        backward_penalty = max(-x_velocity, 0.0) * 2.0
 
         healthy_reward = 1.0
         ctrl_cost = float(np.sum(action ** 2) * self._ctrl_cost_weight)
