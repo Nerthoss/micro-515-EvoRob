@@ -726,11 +726,11 @@ if __name__ == "__main__":
     # print(f"5 generations took {time.time()-start:.1f}s")
     # print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
 
-    x_gen2 = np.load("results/smoke_test11/4/x.npy")[46]
-    np.save("results/smoke_test11/4/x_best.npy", x_gen2)
+    x_gen2 = np.load("results/test01_300gen/44/x.npy")[86]
+    np.save("results/test01_300gen/44/x_best.npy", x_gen2)
 
     evaluate_checkpoint(
-        checkpoint_dir="results/smoke_test11",
+        checkpoint_dir="results/test01_300gen/44",
     )
 
     #sanity_check()
