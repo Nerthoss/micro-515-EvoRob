@@ -6,7 +6,7 @@ generations = []
 mean_fitnesses = []
 best_fitnesses = []
 
-for path in sorted(glob.glob("results/test01_300gen/*/f.npy")):
+for path in sorted(glob.glob("results/smoke_test12/*/f.npy")):
     f = np.load(path)
     gen = int(path.split("/")[-2])
     generations.append(gen)

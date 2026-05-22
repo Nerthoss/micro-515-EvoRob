@@ -62,12 +62,12 @@ class FinalWorld(World):
         # from evorob.world.robot.controllers.so2 import SO2Controller
         # self.controller = SO2Controller(input_size=27, output_size=8, hidden_size=8)
         
-        #self.controller = NeuralNetworkController(input_size=27, output_size=8, hidden_size=8)             #! Swap between controller for symmetry enforcement
-        self.controller = SymmetricNeuralNetworkController(input_size=27, output_size=8, hidden_size=8)
+        self.controller = NeuralNetworkController(input_size=27, output_size=8, hidden_size=8)             #! Swap between controller for symmetry enforcement
+        #self.controller = SymmetricNeuralNetworkController(input_size=27, output_size=8, hidden_size=8)
 
         self.n_weights     = self.controller.n_params
-        #self.n_body_params = 8          #! Swap for symmetry 4 legs × (upper + lower segment length)
-        self.n_body_params = 4           #! enforce left-right symmetry → only 4 unique leg parameters
+        self.n_body_params = 8          #! Swap for symmetry 4 legs × (upper + lower segment length)
+        #self.n_body_params = 4           #! enforce left-right symmetry → only 4 unique leg parameters
         self.n_params      = self.n_weights + self.n_body_params
 
         # Temporary directory holds AntRobot.xml + one combined world XML per terrain
@@ -246,7 +246,7 @@ class FinalWorld(World):
         Writes AntRobot.xml to temp_dir, then creates one combined world XML per
         terrain (flat, ice, hill) by appending an <include> to the template.
         """
-        points, connectivity_mat = self.geno2pheno_sym(genotype) #! Swap for symmetry geno2pheno_sym if using symmetric controller
+        points, connectivity_mat = self.geno2pheno(genotype) #! Swap for symmetry geno2pheno_sym if using symmetric controller
         robot = AntRobot(
             points, connectivity_mat, self.joint_limits, self.joint_axis,
             name="Robot", verbose=False,
@@ -599,18 +599,18 @@ def sanity_check():
 
     # Test 1: all zeros — full genotype
     test_geno1 = np.zeros(world.n_params)
-    pheno1 = world.geno2pheno_sym(test_geno1)
+    pheno1 = world.geno2pheno(test_geno1)
     print(f"All-zero leg lengths: {pheno1[0]}")  # print just the points
 
     # Test 2: all ones — full genotype
     test_geno2 = np.ones(world.n_params)
-    pheno2 = world.geno2pheno_sym(test_geno2)
+    pheno2 = world.geno2pheno(test_geno2)
     print(f"All-one leg lengths: {pheno2[0]}")
 
     # Test 3: verify symmetry is enforced
     test_geno3 = np.zeros(world.n_params)
     test_geno3[world.n_weights:] = np.array([0.5, -0.5, 0.3, -0.3])
-    pheno3 = world.geno2pheno_sym(test_geno3)
+    pheno3 = world.geno2pheno(test_geno3)
     print(f"Symmetry check points:\n{pheno3[0]}")
 
     points = pheno3[0]
@@ -720,17 +720,17 @@ if __name__ == "__main__":
     #     n_repeats=8,
     #     n_steps=1000,
     #     ckpt_interval=1,
-    #     results_dir=join(ROOT_DIR, "results", "smoke_test11"),
+    #     results_dir=join(ROOT_DIR, "results", "smoke_test13"),
     # )
 
     # print(f"5 generations took {time.time()-start:.1f}s")
     # print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
 
-    x_gen2 = np.load("results/test01_300gen/44/x.npy")[86]
-    np.save("results/test01_300gen/44/x_best.npy", x_gen2)
+    # x_gen2 = np.load("results/test02_300gen/134/x.npy")[12]
+    # np.save("results/test02_300gen/134/x_best.npy", x_gen2)
 
     evaluate_checkpoint(
-        checkpoint_dir="results/test01_300gen/44",
+        checkpoint_dir="results/smoke_test13",
     )
 
     #sanity_check()
