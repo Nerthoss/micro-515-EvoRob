@@ -31,7 +31,7 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
         frame_skip: int = 5,
         default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
         ctrl_cost_weight: float = 0.1,
-        cfrc_cost_weight: float = 5e-4,
+        cfrc_cost_weight: float = 2e-4,
         reset_noise_scale: float = 0.1,
         **kwargs,
     ):
@@ -67,19 +67,18 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
 
     def step(self, action):
         # --- Simulate one step ---
-        x_before = self.data.qpos[0]
-        y_before = self.data.qpos[1]
+        xyz_before = self.data.body(1).xpos[:3].copy()
         self.do_simulation(action, self.frame_skip)
-        x_after = self.data.qpos[0]
-        y_after  = self.data.qpos[1]
+        xyz_after = self.data.body(1).xpos[:3].copy()
 
-        # --- Velocity computation ---
-        x_velocity = (x_after - x_before) / self.dt
-        y_velocity  = (y_after - y_before) / self.dt
+        # --- Velocity and position computation ---
+        xyz_velocity = (xyz_after - xyz_before) / self.dt
+        x_velocity   = float(xyz_velocity[0])
+        y_velocity   = float(xyz_velocity[1])
 
         # --- Reward components ---
         healthy_reward   = 0.3
-        forward_reward   =  2.0 * max(x_velocity, 0.0)   # only reward forward motion
+        forward_reward   =  3.0 * max(x_velocity, 0.0)   # only reward forward motion
         backward_penalty =  1.0 * max(-x_velocity, 0.0)  # penalize moving backward
         y_penalty        =  0.3 * abs(y_velocity)         # discourage lateral drift
         ctrl_cost        = float(np.sum(action ** 2) * self._ctrl_cost_weight)

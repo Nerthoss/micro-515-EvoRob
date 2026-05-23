@@ -730,7 +730,7 @@ if __name__ == "__main__":
     # np.save("results/test02_300gen/134/x_best.npy", x_gen2)
 
     evaluate_checkpoint(
-        checkpoint_dir="results/smoke_test13",
+        checkpoint_dir="results/test03_200gen",
     )
 
     #sanity_check()

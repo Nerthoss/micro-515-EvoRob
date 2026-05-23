@@ -6,7 +6,7 @@ generations = []
 mean_fitnesses = []
 best_fitnesses = []
 
-for path in sorted(glob.glob("results/smoke_test12/*/f.npy")):
+for path in sorted(glob.glob("results/test03_200gen/*/f.npy")):
     f = np.load(path)
     gen = int(path.split("/")[-2])
     generations.append(gen)
@@ -26,5 +26,4 @@ for i, (ax, terrain) in enumerate(zip(axes, terrains)):
     ax.set_ylabel("Fitness")
     ax.legend()
 plt.tight_layout()
-plt.savefig("convergence.png")
 plt.show()

@@ -78,7 +78,7 @@ class EvalHillEnv(MujocoEnv, utils.EzPickle):
 
         # --- Reward components ---
         healthy_reward   =  1.0
-        forward_reward   =  2.0 * max(x_velocity, 0.0)     # reward forward progress
+        forward_reward   =  3.0 * max(x_velocity, 0.0)     # reward forward progress
         backward_penalty =  3.0 * max(-x_velocity, 0.0)    # strong — x_position makes sliding back very costly
         ctrl_cost        = float(np.sum(action ** 2) * self._ctrl_cost_weight)
         cfrc_cost        = float(np.sum(self.data.cfrc_ext[1:] ** 2) * self._cfrc_cost_weight)
