@@ -711,26 +711,26 @@ def run_multi_task_evolution(
 
 if __name__ == "__main__":
     # Quick smoke-test — 2 generations, tiny population
-    # start = time.time()
+    start = time.time()
 
-    # run_multi_task_evolution(
-    #     num_generations=5,
-    #     population_size=100,
-    #     n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
-    #     n_repeats=8,
-    #     n_steps=1000,
-    #     ckpt_interval=1,
-    #     results_dir=join(ROOT_DIR, "results", "smoke_test13"),
-    # )
+    run_multi_task_evolution(
+        num_generations=300,
+        population_size=100,
+        n_parents=100, # n_parents must be = population_size for NSGA-II, elitist selection is done internally
+        n_repeats=4,
+        n_steps=500,
+        ckpt_interval=10,
+        results_dir=join(ROOT_DIR, "results", "test04_200gen"),
+    )
 
-    # print(f"5 generations took {time.time()-start:.1f}s")
-    # print(f"Estimated 200 gen: {(time.time()-start)/10*200/60:.1f} minutes")
+    print(f"300 generations took {time.time()-start:.1f}s")
+    print(f"Estimated 200 gen: {(time.time()-start)/300*200/60:.1f} minutes")
 
     # x_gen2 = np.load("results/test02_300gen/134/x.npy")[12]
     # np.save("results/test02_300gen/134/x_best.npy", x_gen2)
 
-    evaluate_checkpoint(
-        checkpoint_dir="results/test03_200gen",
-    )
+    # evaluate_checkpoint(
+    #     checkpoint_dir="results/test03_200gen",
+    # )
 
     #sanity_check()
