@@ -1,0 +1,58 @@
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Received the following error from Worker-0 - Shutting it down[0m
+  self._raise_if_errors(successes)
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Traceback (most recent call last):
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py", line 723, in _async_worker
+    ) = env.step(data)
+        ^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/wrappers/common.py", line 125, in step
+    observation, reward, terminated, truncated, info = self.env.step(action)
+                                                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/wrappers/common.py", line 393, in step
+    return super().step(action)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/core.py", line 322, in step
+    return self.env.step(action)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/wrappers/common.py", line 283, in step
+    return env_step_passive_checker(self.env, action)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/utils/passive_env_checker.py", line 207, in env_step_passive_checker
+    result = env.step(action)
+             ^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/evorob/world/envs/eval_flat.py", line 103, in step
+    "x_position":        float(x_after),
+                               ^^^^^^^
+NameError: name 'x_after' is not defined
+[0m
+  self._raise_if_errors(successes)
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Received the following error from Worker-3 - Shutting it down[0m
+  self._raise_if_errors(successes)
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Received the following error from Worker-1 - Shutting it down[0m
+  self._raise_if_errors(successes)
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Received the following error from Worker-2 - Shutting it down[0m
+  self._raise_if_errors(successes)
+/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py:422: UserWarning: [31mERROR: Raising the last exception back to the main process.[0m
+  self._raise_if_errors(successes)
+Traceback (most recent call last):
+  File "/home/profiche/ER_course/micro-515-EvoRob/final_project_train.py", line 716, in <module>
+    run_multi_task_evolution(
+  File "/home/profiche/ER_course/micro-515-EvoRob/final_project_train.py", line 673, in run_multi_task_evolution
+    fitnesses[idx] = world.evaluate_individual(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/final_project_train.py", line 352, in evaluate_individual
+    self._eval_flat(n_repeats, n_steps),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/final_project_train.py", line 327, in _eval_flat
+    return self._run_env("FlatEnv-v0", self.flat_world_file, n_repeats, n_steps)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/final_project_train.py", line 316, in _run_env
+    obs, r, terminated, truncated, _ = envs.step(actions)
+                                       ^^^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py", line 353, in step
+    return self.step_wait()
+           ^^^^^^^^^^^^^^^^
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py", line 422, in step_wait
+    self._raise_if_errors(successes)
+  File "/home/profiche/ER_course/micro-515-EvoRob/.venv/lib/python3.11/site-packages/gymnasium/vector/async_vector_env.py", line 676, in _raise_if_errors
+    raise exctype(value)
+NameError: name 'x_after' is not defined

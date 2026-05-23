@@ -100,8 +100,8 @@ class EvalFlatEnv(MujocoEnv, utils.EzPickle):
         # --- Info dict ---
         info = {
             "healthy_reward":    -10.0 if terminated else 0.0,
-            "x_position":        float(x_after),
-            "y_position":        float(y_after),
+            "x_position":        float(xyz_after[0]),
+            "y_position":        float(xyz_after[1]),
             "x_velocity":        x_velocity,
             "y_velocity":        y_velocity,
             "forward_reward":    forward_reward,

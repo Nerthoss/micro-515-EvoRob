@@ -1,0 +1,6 @@
+Genotype : 288 params  (controller=280, body=8)
+
+Running 300 generations  pop=100
+Objectives : [flat, ice, hill]
+Checkpoints: /home/profiche/ER_course/micro-515-EvoRob/results/test04_200gen
+
